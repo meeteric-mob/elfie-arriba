@@ -21,8 +21,6 @@ namespace Arriba.TfsWorkItemCrawler.ItemProviders
             switch (config.ItemProvider.ToLowerInvariant())
             {
                 case "":
-                case "tfsitemprovider":
-                    return new TfsItemProvider(config);
                 case "azdo":
                     return new AzureDevOpsItemProvider(config);
                 default:

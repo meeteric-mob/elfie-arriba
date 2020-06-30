@@ -1,6 +1,6 @@
-﻿using Arriba.Model.Column;
+﻿using Arriba.Extensions;
+using Arriba.Model.Column;
 using Arriba.Structures;
-using Microsoft.VisualStudio.Services.Common;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -208,9 +208,9 @@ namespace Arriba.TfsWorkItemCrawler.ItemProviders
 
         private async Task<IList<AzWorkItem>> GetWorkItems(IEnumerable<ItemIdentity> items)
         {
-            IList<AzWorkItem> result = new List<AzWorkItem>();
+            List<AzWorkItem> result = new List<AzWorkItem>();
 
-            foreach (var batch in items.Batch(200))
+            foreach (var batch in items.Page(200))
             {
                 var uri = GetUri($"_apis/wit/workitems/?ids={String.Join(",", batch.Select(x => x.ID))}");
                 var webRequest = await Http.GetAsync(uri);
@@ -225,7 +225,19 @@ namespace Arriba.TfsWorkItemCrawler.ItemProviders
         private Uri GetUri(string uriPart)
         {
             var uri = new Uri(this.BaseUri, uriPart);
-            return uri.AppendQuery("api-version", "5.0");
+
+            const string apiVersion = "api-version=5.0";
+
+            if (string.IsNullOrEmpty(uri.Query))
+            {
+                uri = new Uri($"{uri.AbsoluteUri}?{apiVersion}");
+            }
+            else
+            {
+                uri = new Uri($"{uri.AbsoluteUri}&{apiVersion}");
+            }
+
+            return uri;
         }
 
         private Uri GetAnalyticsUri(string uriPart)
