@@ -161,6 +161,7 @@
     <Compile Include="DefaultCrawler.cs" />
     <Compile Include="ItemConsumers\ArribaClientIndexerItemConsumer.cs" />
     <Compile Include="ItemConsumers\ItemConsumerUtilities.cs" />
+    <Compile Include="ItemProviders\AzureDevOpsItemProvider.cs" />
     <Compile Include="ItemProviders\CsvReaderItemProvider.cs" />
     <Compile Include="ItemConsumers\ComposedItemConsumer.cs" />
     <Compile Include="ItemConsumers\CsvWriterItemConsumer.cs" />

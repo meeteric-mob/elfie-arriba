@@ -23,6 +23,8 @@ namespace Arriba.TfsWorkItemCrawler.ItemProviders
                 case "":
                 case "tfsitemprovider":
                     return new TfsItemProvider(config);
+                case "azdo":
+                    return new AzureDevOpsItemProvider(config);
                 default:
                     throw new InvalidOperationException(String.Format("{0} is an unknown Item Provider", config.ItemProvider));
             }
