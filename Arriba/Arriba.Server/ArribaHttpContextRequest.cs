@@ -5,29 +5,31 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Security.Principal;
 using System.Text;
 using System.Web;
 
 using Arriba.Communication;
+using Microsoft.AspNetCore.Http;
 
 namespace Arriba.Server.Owin
 {
-    public class ArribaOwinRequest : ArribaRequest
+    public class ArribaHttpContextRequest : ArribaRequest
     {
-        private IDictionary<string, object> _environment;
+        private readonly HttpContext _context;
 
-        public ArribaOwinRequest(IDictionary<string, object> environment, IContentReaderWriterService readerWriter)
+        public ArribaHttpContextRequest(HttpContext context, IContentReaderWriterService readerWriter)
             : base(readerWriter)
         {
-            _environment = environment;
+            _context = context;
         }
 
         public override IPrincipal User
         {
             get
             {
-                return _environment.Get<IPrincipal>("server.User");
+                return _context.User;
             }
         }
 
@@ -35,14 +37,15 @@ namespace Arriba.Server.Owin
         {
             get
             {
-                return _environment.Get<string>("server.RemoteIpAddress");
+                //Remote ip address;
+                return string.Empty;
             }
         }
         public override Stream InputStream
         {
             get
             {
-                return _environment.Get<Stream>("owin.RequestBody");
+                return _context.Request.Body;
             }
         }
 
@@ -50,23 +53,29 @@ namespace Arriba.Server.Owin
         {
             get
             {
-                return _environment.Get<string>("owin.RequestMethod");
+                return _context.Request.Method;
             }
         }
 
         protected override string GetRequestPath()
         {
-            return _environment.Get<string>("owin.RequestPath");
+
+            return _context.Request.Path;
         }
 
         protected override IValueBag GetQueryString()
         {
-            return new NameValueCollectionValueBag(HttpUtility.ParseQueryString(_environment.Get<string>("owin.RequestQueryString"), Encoding.UTF8));
+            return new NameValueCollectionValueBag(HttpUtility.ParseQueryString(_context.Request.QueryString.ToUriComponent(), Encoding.UTF8));
         }
 
         protected override IValueBag GetRequestHeaders()
         {
-            return new DictionaryValueBag(_environment.Get<IDictionary<string, string[]>>("owin.RequestHeaders"));
+            return new DictionaryValueBag(AsDictionary(_context.Request.Headers));
+        }
+
+        private IDictionary<string, string[]> AsDictionary(IHeaderDictionary headers)
+        {
+            return new Dictionary<string, string[]>(headers.Select(x => new KeyValuePair<string, string[]>(x.Key, x.Value.ToArray())));
         }
     }
 }
