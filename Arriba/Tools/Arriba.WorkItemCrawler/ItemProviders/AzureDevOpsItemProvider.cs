@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -134,18 +135,31 @@ namespace Arriba.TfsWorkItemCrawler.ItemProviders
         {
             Uri fieldsUri = GetAnalyticsUri($"_odata/v3.0-preview/WorkItems?$select=WorkItemId,ChangedDate,Revision&$orderby=ChangedDate asc&$filter=ChangedDate gt {Format(start)} and ChangedDate lt {Format(end)} {WorkItemConstraint}");
             var webRequest = await Http.GetAsync(fieldsUri);
+            if (!IsSuccessFull(webRequest.StatusCode))
+                throw new ArribaException($"Error performing request: Status code: {webRequest.StatusCode}");
             var json = await webRequest.Content.ReadAsStringAsync();
             var result = JsonConvert.DeserializeObject<ValueRequest<IList<AzureDevOpsChangedWorkItem>>>(json);
 
-            return result.Value
-                .Select(x => new ItemIdentity(x.WorkItemId, x.ChangedDate))
-                .ToList();
+            if (result != null)
+                return result.Value
+                    .Select(x => new ItemIdentity(x.WorkItemId, x.ChangedDate))
+                    .ToList();
+
+            return null;
+        }
+
+        private bool IsSuccessFull(HttpStatusCode statusCode)
+        {
+            return statusCode != HttpStatusCode.BadRequest &&
+                   statusCode != HttpStatusCode.Unauthorized &&
+                   statusCode != HttpStatusCode.Forbidden;
         }
 
         private async Task<IList<ColumnDetails>> ReadColumnsAsync()
         {
-            return  (await this.GetSystemFieldsAsync())
-                .Select(x => {
+            return (await this.GetSystemFieldsAsync())
+                .Select(x =>
+                {
                     bool primaryKey = string.Equals(x.ReferenceName, "System.Id", StringComparison.OrdinalIgnoreCase);
                     return new ColumnDetails(x.Name, MapType(x), null, x.ReferenceName, primaryKey);
                 })
