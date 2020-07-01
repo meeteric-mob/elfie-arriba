@@ -61,6 +61,14 @@ namespace Arriba.Server
             // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
             public void ConfigureServices(IServiceCollection services)
             {
+                services.AddCors(options =>
+                {
+                    options.AddPolicy(name: "allow-any",
+                                      builder =>
+                                      {
+                                          builder.AllowAnyOrigin();
+                                      });
+                });
             }
 
             // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -78,13 +86,32 @@ namespace Arriba.Server
                 host.Compose();
 
                 var server = host.GetService<ComposedApplicationServer>();
+                
+                app.UseCors();
 
-                app.Run(async context =>
+                app.Use(async (context, next) =>
                 {
-                    var request = new ArribaHttpContextRequest(context, server.ReaderWriter);
-                    var response = await server.HandleAsync(request, false);
-                    await Write(request, response, server.ReaderWriter, context);
+                    try
+                    {
+                        var request = new ArribaHttpContextRequest(context, server.ReaderWriter);
+                        var response = await server.HandleAsync(request, false);
+                        context.Response.Headers["Access-Control-Allow-Origin"] = "http://localhost:8080";
+                        context.Response.Headers["Access-Control-Allow-Credentials"] = "true";
+                        await Write(request, response, server.ReaderWriter, context);
+                    }
+                    catch
+                    {
+                        throw null;
+                    }
+                    finally
+                    {
+                        if (next != null)
+                        {
+                            await next();
+                        }
+                    }
                 });
+
             }
 
             private async Task Write(ArribaHttpContextRequest request, IResponse response, IContentReaderWriterService readerWriter, HttpContext context)
