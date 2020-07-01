@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 
 using Newtonsoft.Json;
@@ -50,9 +51,10 @@ namespace Arriba.Communication.ContentTypes
 
         async Task IContentWriter.WriteAsync(IRequest request, Stream output, object content)
         {
-            using (StreamWriter writer = new StreamWriter(output))
+            using (StreamWriter writer = new StreamWriter(output, Encoding.UTF8, bufferSize: -1, leaveOpen: true))
             {
                 await WriteAsyncCore(writer, content);
+                await writer.FlushAsync();
             }
         }
 
