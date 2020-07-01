@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Security.Claims;
 using System.Security.Principal;
 using System.Text;
 using System.Web;
@@ -29,7 +30,7 @@ namespace Arriba.Server.Owin
         {
             get
             {
-                return _context.User;
+                return new GenericPrincipal(new GenericIdentity("Anonymous"), Array.Empty<string>());
             }
         }
 
