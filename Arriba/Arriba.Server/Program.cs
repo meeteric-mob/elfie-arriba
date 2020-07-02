@@ -3,16 +3,10 @@
 
 using Arriba.Communication;
 using Arriba.Monitoring;
-using Arriba.Server.Hosting;
 using Arriba.Server.Owin;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.AzureAD.UI;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc.Authorization;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
@@ -66,16 +60,20 @@ namespace Arriba.Server
             // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
             public void ConfigureServices(IServiceCollection services)
             {
-                services.AddCors(options =>
+                services.AddCors(cors =>
                 {
-                    options.AddPolicy(name: "allow-any",
-                                      builder =>
-                                      {
-                                          builder.AllowAnyOrigin();
-                                      });
+                    cors.AddDefaultPolicy(builder =>
+                                            {
+                                                builder.WithOrigins(new[] { "http://localhost:8080" })
+                                                    .AllowAnyMethod()
+                                                    .AllowCredentials()
+                                                    .AllowAnyHeader();
+                                            });
                 });
+
+                services.AddControllers();
             }
-           
+
             // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
             public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
             {
@@ -84,40 +82,14 @@ namespace Arriba.Server
                     app.UseDeveloperExceptionPage();
                 }
 
-                //app.UseCors();
-
-                var host = new Arriba.Server.Hosting.Host();
-                host.Add<JsonConverter>(new StringEnumConverter());
-                host.Compose();
-
-                var server = host.GetService<ComposedApplicationServer>();
-
+                app.UseRouting();
                 app.UseCors();
 
-                app.Use(Auth);
-                app.Use(async (context, next) =>
+                app.UseEndpoints(endpoints =>
                 {
-                    try
-                    {
-                        var request = new ArribaHttpContextRequest(context, server.ReaderWriter);
-                        var response = await server.HandleAsync(request, false);
-                        context.Response.Headers["Access-Control-Allow-Origin"] = "http://localhost:8080";
-                        context.Response.Headers["Access-Control-Allow-Credentials"] = "true";
-                        await Write(request, response, server.ReaderWriter, context);
-                    }
-                    catch
-                    {
-                        throw null;
-                    }
-                    finally
-                    {
-                        if (next != null)
-                        {
-                            await next();
-                        }
-                    }
+                    endpoints.MapControllers();
+                    endpoints.MapFallback(HandleArribaRequest);
                 });
-
             }
 
             private Task Auth(HttpContext context, Func<Task> next)
@@ -128,6 +100,18 @@ namespace Arriba.Server
                 context.Response.Redirect($"https://login.microsoftonline.com/{tenant}/oauth2/v2.0/authorize?client_id={appId}&response_type=id_token&redirect_uri={redirect}&scope=openid&response_mode=fragment&state=12345&nonce=678910");
                 return Task.CompletedTask;
                 //await next();
+            }
+
+            private async Task HandleArribaRequest(HttpContext context)
+            {
+                var host = new Arriba.Server.Hosting.Host();
+                host.Add<JsonConverter>(new StringEnumConverter());
+                host.Compose();
+
+                var server = host.GetService<ComposedApplicationServer>();
+                var request = new ArribaHttpContextRequest(context, server.ReaderWriter);
+                var response = await server.HandleAsync(request, false);
+                await Write(request, response, server.ReaderWriter, context);
             }
 
             private async Task Write(ArribaHttpContextRequest request, IResponse response, IContentReaderWriterService readerWriter, HttpContext context)
