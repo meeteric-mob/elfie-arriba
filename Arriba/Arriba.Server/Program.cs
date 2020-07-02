@@ -5,9 +5,14 @@ using Arriba.Communication;
 using Arriba.Monitoring;
 using Arriba.Server.Hosting;
 using Arriba.Server.Owin;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.AzureAD.UI;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.Authorization;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Newtonsoft.Json;
@@ -70,7 +75,7 @@ namespace Arriba.Server
                                       });
                 });
             }
-
+           
             // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
             public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
             {
@@ -86,9 +91,10 @@ namespace Arriba.Server
                 host.Compose();
 
                 var server = host.GetService<ComposedApplicationServer>();
-                
+
                 app.UseCors();
 
+                app.Use(Auth);
                 app.Use(async (context, next) =>
                 {
                     try
@@ -112,6 +118,16 @@ namespace Arriba.Server
                     }
                 });
 
+            }
+
+            private Task Auth(HttpContext context, Func<Task> next)
+            {
+                const string redirect = "https://localhost:42784/signin-redirect";
+                const string tenant = "c3611820-5bdd-4423-a1fc-18834a47ae78";
+                const string appId = "051ef594-8e5a-4156-a8ce-93fae3220779";
+                context.Response.Redirect($"https://login.microsoftonline.com/{tenant}/oauth2/v2.0/authorize?client_id={appId}&response_type=id_token&redirect_uri={redirect}&scope=openid&response_mode=fragment&state=12345&nonce=678910");
+                return Task.CompletedTask;
+                //await next();
             }
 
             private async Task Write(ArribaHttpContextRequest request, IResponse response, IContentReaderWriterService readerWriter, HttpContext context)
