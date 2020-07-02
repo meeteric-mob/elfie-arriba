@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Arriba.Communication;
@@ -92,18 +92,9 @@ namespace Arriba.Server
                 });
             }
 
-            private Task Auth(HttpContext context, Func<Task> next)
-            {
-                const string redirect = "https://localhost:42784/signin-redirect";
-                const string tenant = "c3611820-5bdd-4423-a1fc-18834a47ae78";
-                const string appId = "051ef594-8e5a-4156-a8ce-93fae3220779";
-                context.Response.Redirect($"https://login.microsoftonline.com/{tenant}/oauth2/v2.0/authorize?client_id={appId}&response_type=id_token&redirect_uri={redirect}&scope=openid&response_mode=fragment&state=12345&nonce=678910");
-                return Task.CompletedTask;
-                //await next();
-            }
-
             private async Task HandleArribaRequest(HttpContext context)
             {
+
                 var host = new Arriba.Server.Hosting.Host();
                 host.Add<JsonConverter>(new StringEnumConverter());
                 host.Compose();
