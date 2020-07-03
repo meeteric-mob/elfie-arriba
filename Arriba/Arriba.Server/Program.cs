@@ -1,4 +1,4 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Arriba.Communication;
@@ -14,6 +14,7 @@ using Newtonsoft.Json.Converters;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Net;
 using System.Threading.Tasks;
 using AspNetHost = Microsoft.Extensions.Hosting.Host;
 
@@ -94,7 +95,12 @@ namespace Arriba.Server
 
             private async Task HandleArribaRequest(HttpContext context)
             {
-
+                if (!context.Request.Headers.ContainsKey("Authorization"))
+                {
+                    context.Response.StatusCode = 401;
+                    return;
+                }
+                
                 var host = new Arriba.Server.Hosting.Host();
                 host.Add<JsonConverter>(new StringEnumConverter());
                 host.Compose();
