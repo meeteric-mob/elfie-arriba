@@ -1,9 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+﻿using Arriba.Configuration;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace Arriba.Server.Controllers
 {
@@ -11,15 +12,127 @@ namespace Arriba.Server.Controllers
     [ApiController]
     public class OAuthController : ControllerBase
     {
+        private readonly IOAuthConfig _config;
+        private readonly HttpClient _http;
 
-        [HttpGet]
-        public IActionResult SignIn()
+        public OAuthController(IOAuthConfig config)
         {
-            const string redirect = "https://localhost:42784/signin-redirect";
-            const string tenant = "c3611820-5bdd-4423-a1fc-18834a47ae78";
-            const string appId = "051ef594-8e5a-4156-a8ce-93fae3220779";
-            return this.Redirect($"https://login.microsoftonline.com/{tenant}/oauth2/v2.0/authorize?client_id={appId}&response_type=id_token&redirect_uri={redirect}&scope=openid&response_mode=fragment&state=12345&nonce=678910");
+            _config = config;
+            _http = new HttpClient();
         }
 
+        [HttpGet]
+        public async Task<IActionResult> SignInAsync()
+        {
+            var uri = await GetAuthorizeUrlAsync(_config);
+            return this.Redirect(uri.AbsoluteUri);
+        }
+
+        [HttpGet]
+        [Route("auth-code")]
+        public async Task<IActionResult> AuthCodeAsync([FromQuery]string code, [FromQuery] string state)
+        {
+            var content = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                { "grant_type", "authorization_code" },
+                { "client_id", _config.AudienceId },
+                { "client_secret", _config.AppSecret },
+                { "scope", GetScopes(_config.Scopes) },
+                { "code", code },
+                { "redirect_uri", _config.RedirectUrl },
+            });
+
+            var tokenResult = await ReadTokenResultAsync(await GetTokenUrlAsync(_config), content);
+            return Redirect($"http://localhost:8080/#access_token={tokenResult.AccessToken}");
+        }
+
+        private async Task<Uri> GetAuthorizeUrlAsync(IOAuthConfig config)
+        {
+            return await GetOAuthUrlAsync("authorize", config);
+        }
+
+        private async Task<Uri> GetTokenUrlAsync(IOAuthConfig config)
+        {
+            return await GetOAuthUrlAsync("token", config);
+        }
+
+        private async Task<Uri> GetOAuthUrlAsync(string action, IOAuthConfig config)
+        {
+            var authorizeUrl = $"https://login.microsoftonline.com/{config.TenantId}/oauth2/v2.0/{action}";
+
+            Random rnd = new Random();
+            byte[] seedBytes = new byte[32];
+            rnd.NextBytes(seedBytes);
+
+            var ps = new Dictionary<string, string>
+            {
+                { "client_id", _config.AudienceId },
+                { "response_type", "code" },
+                { "response_mode", "query" },
+                { "prompt", _config.Prompt },
+                { "scope", GetScopes(_config.Scopes) },
+                { "state", "012345" }
+            };
+
+            string dataString;
+            using (var formContent = new FormUrlEncodedContent(ps))
+            {
+                dataString = await formContent.ReadAsStringAsync();
+            }
+
+            return new Uri($"{authorizeUrl}?{dataString}");
+        }
+
+        private async Task<OAuthTokenResult> ReadTokenResultAsync(Uri uri, HttpContent content)
+        {
+            OAuthTokenResult oAuthToken = null;
+            var response = await _http.PostAsync(uri, content);
+            var result = await response.Content.ReadAsStringAsync();
+
+            response.EnsureSuccessStatusCode();
+            oAuthToken = JsonConvert.DeserializeObject<OAuthTokenResult>(result);
+
+            return oAuthToken;
+        }
+
+        private string GetScopes(IList<string> scopes)
+        {
+            return string.Join(" ", scopes);
+        }
+    }
+
+    public class OAuthTokenResult 
+    {
+        public string Value
+        {
+            get
+            {
+                return AccessToken;
+            }
+        }
+
+        [JsonProperty("access_token")]
+        public string AccessToken { get; set; }
+
+        [JsonProperty("refresh_token")]
+        public string Token { get; set; }
+
+        [JsonProperty("token_type")]
+        public string TokenType { get; set; }
+
+        [JsonProperty("expires_in")]
+        public string ExpriresIn { get; set; }
+
+        [JsonProperty("ext_expires_in")]
+        public string ExtExpiresIn { get; set; }
+
+        [JsonProperty("expires_on")]
+        public string ExpiresOn { get; set; }
+
+        [JsonProperty("not_before")]
+        public string NotBefore { get; set; }
+
+        [JsonProperty("resource")]
+        public string Resource { get; set; }
     }
 }

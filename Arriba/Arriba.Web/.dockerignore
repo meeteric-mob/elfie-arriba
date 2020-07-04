@@ -1,0 +1,6 @@
+.vscode
+bundle.js
+bundle.js.map
+pachage-lock.json
+node_modules
+Dockerfile
