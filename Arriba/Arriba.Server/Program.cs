@@ -1,9 +1,13 @@
-// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using Arriba.Communication;
+using Arriba.Configuration;
 using Arriba.Monitoring;
+using Arriba.Security.OAuth;
 using Arriba.Server.Owin;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -14,6 +18,7 @@ using Newtonsoft.Json.Converters;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Net;
 using System.Threading.Tasks;
 using AspNetHost = Microsoft.Extensions.Hosting.Host;
 
@@ -71,6 +76,21 @@ namespace Arriba.Server
                                             });
                 });
 
+                var azureTokens = AzureJwtTokenFactory.CreateAsync(new OAuthConfig()).Result;
+                services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                    .AddJwtBearer(azureTokens.Configure);
+
+                var jwtBearerPolicy = new AuthorizationPolicyBuilder()
+                   .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme)
+                   .RequireAuthenticatedUser()
+                   .Build();
+
+                services.AddAuthorization(auth =>
+                {
+                    auth.DefaultPolicy = jwtBearerPolicy;
+                });
+
+                services.AddSingleton<IOAuthConfig, OAuthConfig>();
                 services.AddControllers();
             }
 
@@ -84,17 +104,16 @@ namespace Arriba.Server
 
                 app.UseRouting();
                 app.UseCors();
-
+                app.UseAuthorization();
                 app.UseEndpoints(endpoints =>
                 {
                     endpoints.MapControllers();
-                    endpoints.MapFallback(HandleArribaRequest);
+                    endpoints.MapFallback(HandleArribaRequest).RequireAuthorization();
                 });
             }
 
             private async Task HandleArribaRequest(HttpContext context)
             {
-
                 var host = new Arriba.Server.Hosting.Host();
                 host.Add<JsonConverter>(new StringEnumConverter());
                 host.Compose();
