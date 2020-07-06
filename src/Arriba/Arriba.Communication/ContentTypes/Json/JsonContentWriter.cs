@@ -54,7 +54,6 @@ namespace Arriba.Communication.ContentTypes
             using (StreamWriter writer = new StreamWriter(output, Encoding.UTF8, bufferSize: -1, leaveOpen: true))
             {
                 await WriteAsyncCore(writer, content);
-                await writer.FlushAsync();
             }
         }
 

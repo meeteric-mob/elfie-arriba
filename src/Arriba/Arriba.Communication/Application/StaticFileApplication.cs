@@ -41,7 +41,7 @@ namespace Arriba.Communication.Application
         private IResponse ServeFile(IRequestContext request, Route routeData)
         {
             string subPath = routeData.GetPart("path") ?? String.Empty;
-            string localPath = Path.Combine(_basePath, subPath.Replace("/", "\\"));
+            string localPath = Path.Combine(_basePath, subPath.Replace('/', Path.DirectorySeparatorChar));
 
             // If we are being asked to serve a directory, look for the default file (e.g. index.html) 
             if (Directory.Exists(localPath))

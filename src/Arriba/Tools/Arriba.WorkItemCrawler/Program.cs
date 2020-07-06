@@ -20,6 +20,8 @@ namespace Arriba.TfsWorkItemCrawler
     {
         private static async Task<int> Main(string[] args)
         {
+            Trace.Listeners.Add(new TextWriterTraceListener(Console.Out));
+
             if (args.Length < 2)
             {
                 Usage();
@@ -28,6 +30,8 @@ namespace Arriba.TfsWorkItemCrawler
 
             string configurationName = args[0];
             string mode = args[1].ToLowerInvariant();
+
+            Trace.WriteLine("Launching Crawler");
 
             using (FileLock locker = FileLock.TryGet(String.Format("Arriba.TfsWorkItemCrawler.{0}.lock", configurationName)))
             {
@@ -42,8 +46,8 @@ namespace Arriba.TfsWorkItemCrawler
 
                     // Load the Configuration [up two or three folders, for Databases\<configurationName>\config.json
                     string thisExePath = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
-                    string configJsonPath = Path.Combine(thisExePath, @"..\..\..\Databases", configurationName, "config.json");
-                    if (!File.Exists(configJsonPath)) configJsonPath = Path.Combine(thisExePath, @"..\..\..\..\Databases", configurationName, "config.json");
+                    string configJsonPath = Path.Combine(thisExePath, @"../../../Databases", configurationName, "config.json");
+                    if (!File.Exists(configJsonPath)) configJsonPath = Path.Combine(thisExePath, @"../../../../Databases", configurationName, "config.json");
                     string configJson = File.ReadAllText(configJsonPath);
 
                     CrawlerConfiguration config = JsonConvert.DeserializeObject<CrawlerConfiguration>(configJson);
@@ -74,14 +78,14 @@ namespace Arriba.TfsWorkItemCrawler
                 {
                     foreach (Exception inner in ex.InnerExceptions)
                     {
-                        Trace.TraceError(String.Format("ERROR: {0}\r\n{1}", Environment.CommandLine, inner));
+                        Console.WriteLine(String.Format("ERROR: {0}\r\n{1}", Environment.CommandLine, inner));
                     }
 
                     return -2;
                 }
                 catch (Exception ex)
                 {
-                    Trace.TraceError(String.Format("ERROR: {0}\r\n{1}", Environment.CommandLine, ex));
+                    Console.WriteLine(String.Format("ERROR: {0}\r\n{1}", Environment.CommandLine, ex));
                     return -2;
                 }
             }

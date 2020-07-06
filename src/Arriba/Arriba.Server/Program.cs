@@ -11,8 +11,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using System;
@@ -44,6 +46,8 @@ namespace Arriba.Server
             // Always log to CSV
             EventPublisher.AddConsumer(new CsvEventConsumer());
 
+            Trace.Listeners.Add(new TextWriterTraceListener(Console.Out));
+
             CreateHostBuilder(args).Build().Run();
 
             Console.WriteLine("Exiting.");
@@ -65,6 +69,16 @@ namespace Arriba.Server
             // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
             public void ConfigureServices(IServiceCollection services)
             {
+                Console.WriteLine("ConsoleLog");
+                Trace.WriteLine("TraceLog");
+                Debug.WriteLine("DebugLog");
+
+                // TODO: Remove this setting and fix locations where sync IO happens
+                services.Configure<KestrelServerOptions>(options =>
+                {
+                    options.AllowSynchronousIO = true;
+                });
+
                 services.AddCors(cors =>
                 {
                     cors.AddDefaultPolicy(builder =>
@@ -168,18 +182,22 @@ namespace Arriba.Server
                     catch (Exception e)
                     {
                         writeException = e;
+                        Trace.TraceError(e.ToString());
                     }
 
                     if (writeException != null)
                     {
-                        context.Response.StatusCode = 500;
-
-                        if (responseBody.CanWrite)
+                        if (!context.Response.HasStarted)
                         {
-                            using (var failureWriter = new StreamWriter(responseBody))
+                            context.Response.StatusCode = 500;
+
+                            if (responseBody.CanWrite)
                             {
-                                var message = String.Format("ERROR: Content writer {0} for content type {1} failed with exception {2}", writer.GetType(), writer.ContentType, writeException.GetType().Name);
-                                await failureWriter.WriteAsync(message);
+                                using (var failureWriter = new StreamWriter(responseBody))
+                                {
+                                    var message = String.Format("ERROR: Content writer {0} for content type {1} failed with exception {2}", writer.GetType(), writer.ContentType, writeException.GetType().Name);
+                                    await failureWriter.WriteAsync(message);
+                                }
                             }
                         }
                     }
