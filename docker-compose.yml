@@ -1,0 +1,35 @@
+version: '3'
+volumes:
+  arriba:
+
+services:
+  base:
+    image: arriba-base
+    build: 
+      context: ./src
+      dockerfile: Dockerfile
+  crawler:
+    build: 
+      context: .docker/Crawler
+      dockerfile: Dockerfile
+    depends_on:
+      - base
+    volumes:
+      - arriba:/Arriba/DiskCache
+    environment:
+      CLIENT_SECRET: UNKNOWN_CLIENT_SECRET
+      TENANT_ID: UNKNOWN_TENANT_ID
+  server:
+    build: 
+      context: .docker/Server
+      dockerfile: Dockerfile
+    depends_on:
+      - base
+    ports:
+      - 42784:80
+    volumes:
+      - arriba:/Arriba/DiskCache
+    environment:
+      CLIENT_SECRET: UNKNOWN_CLIENT_SECRET
+      TENANT_ID: UNKNOWN_TENANT_ID
+
