@@ -118,8 +118,6 @@ namespace Arriba.TfsWorkItemCrawler
         /// </summary>
         public Dictionary<string, string> ColumnMappings { get; set; }
 
-        public IOAuthConfig OAuthConfig { get; }
-
         public CrawlerConfiguration()
         {
             this.Owners = new List<string>();
@@ -128,7 +126,6 @@ namespace Arriba.TfsWorkItemCrawler
             this.ColumnsToInclude = new List<string>();
             this.ColumnsToExclude = new List<string>();
             this.ColumnMappings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            this.OAuthConfig = new OAuthConfig();
         }
 
         public SecurityPermissions LoadPermissions()
