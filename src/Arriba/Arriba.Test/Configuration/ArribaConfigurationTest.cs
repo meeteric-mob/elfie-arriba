@@ -9,17 +9,15 @@ namespace Arriba.Test.Configuration
     [TestClass]
     public class ArribaConfigurationTest
     {
-        private IArribaConfiguration _configuration;
-        private IArribaConfigurationLoader _configurationLoader;        
 
         [TestMethod]
         public void LoadExistentConfigurationUsingConfigurationName()
         {
             var args = new string[] { };
-            _configurationLoader = new ArribaConfigurationLoader(args, GetBasePath("Louvau"));
-            _configuration = _configurationLoader.Bind<CrawlerConfiguration>("Arriba");
-            Assert.IsNotNull(_configuration);
-            Assert.AreEqual("Louvau", _configuration.ArribaTable);
+            var configurationLoader = new ArribaConfigurationLoader(args, GetBasePath("Louvau"));
+            var configuration = configurationLoader.Bind<CrawlerConfiguration>("Arriba");
+            Assert.IsNotNull(configuration);
+            Assert.AreEqual("Louvau", configuration.ArribaTable);
         }
 
         [TestMethod]
@@ -36,8 +34,8 @@ namespace Arriba.Test.Configuration
                 .AddEnvironmentVariables()
                 .Build();
 
-            _configurationLoader = new ArribaConfigurationLoader(confRoot);
-            Assert.IsNotNull(_configurationLoader);
+            var configurationLoader = new ArribaConfigurationLoader(confRoot);
+            Assert.IsNotNull(configurationLoader);
         }
 
         [TestMethod]
@@ -46,22 +44,45 @@ namespace Arriba.Test.Configuration
             System.Environment.SetEnvironmentVariable("ArribaLoaderTest", "true");
 
             var args = new string[] { };
-            _configurationLoader = new ArribaConfigurationLoader(args);            
-            Assert.IsNotNull(_configurationLoader);
-            Assert.AreEqual("true", _configurationLoader.GetStringValue("ArribaLoaderTest"));
+            var configurationLoader = new ArribaConfigurationLoader(args);
+            Assert.IsNotNull(configurationLoader);
+            Assert.AreEqual("true", configurationLoader.GetStringValue("ArribaLoaderTest"));
         }
 
 
         [TestMethod]
         public void AddNetJsonConfigurationFile()
         {
-            var args = new string[] {"test=foo" };
-            _configurationLoader = new ArribaConfigurationLoader(args);
-            Assert.IsNotNull(_configurationLoader);
-            Assert.AreEqual("foo", _configurationLoader.GetStringValue("test"));
-            Assert.AreEqual("", _configurationLoader.GetStringValue("Arriba:arribaTable", ""));
-            _configurationLoader.AddJsonSource(Path.Combine(GetBasePath("Louvau"),"appsettings.json"));
-            Assert.AreEqual("Louvau", _configurationLoader.GetStringValue("Arriba:arribaTable"));
+            var args = new string[] { "test=foo" };
+            var configurationLoader = new ArribaConfigurationLoader(args);
+            Assert.IsNotNull(configurationLoader);
+            Assert.AreEqual("foo", configurationLoader.GetStringValue("test"));
+            Assert.AreEqual("", configurationLoader.GetStringValue("Arriba:arribaTable", ""));
+            configurationLoader.AddJsonSource(Path.Combine(GetBasePath("Louvau"), "appsettings.json"));
+            Assert.AreEqual("Louvau", configurationLoader.GetStringValue("Arriba:arribaTable"));
+        }
+
+        [TestMethod]
+        public void ThrowExeceptionWhenParameterDoestExists()
+        {
+            var args = new string[] { "mode=load" };
+            var configurationLoader = new ArribaConfigurationLoader(args);
+            Assert.AreEqual("load", configurationLoader.GetStringValue("mode"));
+            Assert.ThrowsException<ArribaConfigurationLoaderException>(() => configurationLoader.GetStringValue("teste"));
+        }
+
+        [DataTestMethod]
+        [DataRow(new string[] { "mode=load" })]
+        [DataRow(new string[] { "name=\"First Document\"" })]
+        [DataRow(new string[] { "mode=import", "table=Scratch", "select=\"Date, Adj Close\"", "take=20", "orderBy=Date", "load=true" })]
+        public void ProcessCommandArgument(string[] args)
+        {
+            var configurationLoader = new ArribaConfigurationLoader(args);
+            foreach (var arg in args)
+            {
+                var parts = arg.Split('=');
+                Assert.AreEqual(parts[1], configurationLoader.GetStringValue(parts[0]));
+            }            
         }
 
         private string GetBasePath(string configurationName)
