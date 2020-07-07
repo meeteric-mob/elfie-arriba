@@ -32,4 +32,11 @@ services:
     environment:
       CLIENT_SECRET: UNKNOWN_CLIENT_SECRET
       TENANT_ID: UNKNOWN_TENANT_ID
-
+  web:
+    build: 
+      context: .docker/WebUI
+      dockerfile: Dockerfile
+    depends_on:
+      - base
+    ports:
+      - 8080:8080
