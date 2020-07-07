@@ -4,14 +4,11 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
 using Arriba.Model.Column;
 using Arriba.TfsWorkItemCrawler.ItemConsumers;
 using Arriba.TfsWorkItemCrawler.ItemProviders;
-using Microsoft.Extensions.Configuration;
 
 namespace Arriba.TfsWorkItemCrawler
 {
