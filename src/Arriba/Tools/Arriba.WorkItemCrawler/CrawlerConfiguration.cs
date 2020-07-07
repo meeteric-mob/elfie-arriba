@@ -73,7 +73,6 @@ namespace Arriba.TfsWorkItemCrawler
         /// <summary>
         ///  Name of IItemConsumer to write to on crawl. [ArribaClient, ArribaDirect, CsvWriter]
         /// </summary>
-        [JsonProperty("itemConsumer")]
         public string ItemConsumer { get; set; }
 
         /// <summary>
