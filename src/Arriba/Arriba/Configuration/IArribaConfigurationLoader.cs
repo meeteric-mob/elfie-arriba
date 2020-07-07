@@ -12,6 +12,6 @@ namespace Arriba.Configuration
         int GetIntValue(string keyName, int defaultValue = 0);
         bool GetBoolValue(string keyName, bool defaultValue = false);
         bool AddJsonSource(string jsonPath);
-
+        IEnumerator<KeyValuePair<string, string>> GetEnumerator();
     }
 }
