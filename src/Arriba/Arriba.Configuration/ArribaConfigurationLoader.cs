@@ -13,16 +13,18 @@ namespace Arriba.Configuration
     {
         private const int MaximumSymbolNesting = 10;
 
-        private readonly IConfigurationRoot configuration;
+        private IConfigurationRoot configuration;
+        private ConfigurationBuilder configurationBuilder;
 
         public ArribaConfigurationLoader(IConfigurationRoot configuration)
         {
             if (configuration == null) throw new ArgumentNullException(nameof(configuration));
 
             this.configuration = configuration;
+            configurationBuilder = new ConfigurationBuilder();
         }
 
-        public ArribaConfigurationLoader(string[] args, string basePath)
+        public ArribaConfigurationLoader(string[] args, string basePath = "")
         {
             if (args == null) throw new ArgumentNullException(nameof(args));
 
@@ -34,66 +36,17 @@ namespace Arriba.Configuration
                     throw new DirectoryNotFoundException(basePath);
             }
 
-            var builder = new ConfigurationBuilder();
-            builder.SetBasePath(basePath);
+            configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.SetBasePath(basePath);
 
-            configuration = builder.AddJsonFile("appsettings.json", true)
+            configuration = configurationBuilder.AddJsonFile("appsettings.json", true)
                 .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")}.json", true)
                 .AddEnvironmentVariables()
                 .AddCommandLine(args)
                 .Build();
         }
 
-        /// <summary>
-        /// Loads the configuration using the Configuration Name folder existent in ./Arriba/Databases
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="configurationName">Folder name that holds the appsettings.json</param>
-        /// <param name="sectionName">Name of the section that holds the Arriba configuration, empty string to bind the json to the type</param>
-        /// <returns>Object that implements IArribaConfiguration</returns>
-        static public T LoadByConfigurationName<T>(string configurationName, string sectionName) where T : class, IArribaConfiguration, new()
-        {
-            if (string.IsNullOrWhiteSpace(configurationName)) throw new ArgumentException("Not Provided!", nameof(configurationName));
-
-            var configPath = Path.Combine(GetBasePath(), "Arriba", "Databases", configurationName, "appsettings.json");
-            return LoadByPath<T>(configPath, sectionName);
-        }
-
-        /// <summary>
-        /// Loads the configuration using the full path 
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="jsonConfigurationPath">full path for the configuration json</param>
-        /// <param name="sectionName">Name of the section that holds the Arriba configuration, empty string to bind the json to the type</param>
-        /// <returns>Object that implements IArribaConfiguration</returns>
-        /// <returns></returns>
-        static public T LoadByPath<T>(string jsonConfigurationPath, string sectionName = "") where T : class, IArribaConfiguration, new()
-        {
-            if (string.IsNullOrWhiteSpace(jsonConfigurationPath)) throw new ArgumentException("Not Provided!", nameof(jsonConfigurationPath));
-
-            if (!File.Exists(jsonConfigurationPath))
-                throw new FileNotFoundException(jsonConfigurationPath);
-
-            var builder = new ConfigurationBuilder()
-            .AddJsonFile(jsonConfigurationPath, optional: true)
-            .AddEnvironmentVariables();
-
-            var config = new T();
-            if (string.IsNullOrWhiteSpace(sectionName))
-                builder.Build().Bind(config);
-            else
-                builder.Build().GetSection(sectionName).Bind(config);
-            return config;
-        }
-
-        private static string GetBasePath()
-        {
-            var configSrcFolder = "src";
-            var basePath = Directory.GetCurrentDirectory();
-            basePath = basePath.Substring(0, basePath.IndexOf(configSrcFolder) + configSrcFolder.Length);
-            return basePath;
-        }
-
+        
         public T Bind<T>(string sectionName) where T : IArribaConfiguration, new()
         {
             var config = new T();
@@ -107,6 +60,19 @@ namespace Arriba.Configuration
                 section.Bind(config);
             }
             return config;
+        }
+
+        public bool AddJsonSource(string jsonPath)
+        {
+            if (string.IsNullOrWhiteSpace(jsonPath)) throw new ArgumentException("Not Provided!", nameof(jsonPath));
+
+            if (!File.Exists(jsonPath))
+                throw new FileNotFoundException(jsonPath);
+
+            configurationBuilder.AddJsonFile(jsonPath);
+            configuration = configurationBuilder.Build();
+
+            return true;
         }
 
         public string GetStringValue(string keyName, string defaultValue = null)
@@ -185,5 +151,7 @@ namespace Arriba.Configuration
 
             return value;
         }
+
+        
     }
 }
