@@ -11,8 +11,7 @@ using System.Threading.Tasks;
 using Arriba.Model.Column;
 using Arriba.TfsWorkItemCrawler.ItemConsumers;
 using Arriba.TfsWorkItemCrawler.ItemProviders;
-
-using Newtonsoft.Json;
+using Microsoft.Extensions.Configuration;
 
 namespace Arriba.TfsWorkItemCrawler
 {
@@ -44,14 +43,8 @@ namespace Arriba.TfsWorkItemCrawler
                         return -2;
                     }
 
-                    // Load the Configuration [up two or three folders, for Databases\<configurationName>\config.json
-                    string thisExePath = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
-                    string configJsonPath = Path.Combine(thisExePath, @"../../../Databases", configurationName, "config.json");
-                    if (!File.Exists(configJsonPath)) configJsonPath = Path.Combine(thisExePath, @"../../../../Databases", configurationName, "config.json");
-                    string configJson = File.ReadAllText(configJsonPath);
-
-                    CrawlerConfiguration config = JsonConvert.DeserializeObject<CrawlerConfiguration>(configJson);
-                    config.ConfigurationName = configurationName;
+                    var config = ArribaConfigurationLoader
+                        .LoadByConfigurationName<CrawlerConfiguration>(configurationName, "Arriba");                    
 
                     // Build the item consumer
                     IItemConsumer consumer = ItemConsumerUtilities.Build(config);

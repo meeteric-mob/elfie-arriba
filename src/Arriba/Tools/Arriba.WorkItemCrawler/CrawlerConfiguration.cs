@@ -3,12 +3,15 @@
 
 using System;
 using System.Collections.Generic;
-
+using System.IO;
+using Arriba.Configuration;
 using Arriba.Model.Security;
+using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 
 namespace Arriba.TfsWorkItemCrawler
 {
-    public class CrawlerConfiguration
+    public class CrawlerConfiguration : IArribaConfiguration
     {
         internal const string IdentityFormatExceptionFormatString = @"Identity must be of the format User:DOMAIN\name or Group:DOMAIN\name. Value passed, '{0}', doesn't fit these rules.";
 
@@ -70,6 +73,7 @@ namespace Arriba.TfsWorkItemCrawler
         /// <summary>
         ///  Name of IItemConsumer to write to on crawl. [ArribaClient, ArribaDirect, CsvWriter]
         /// </summary>
+        [JsonProperty("itemConsumer")]
         public string ItemConsumer { get; set; }
 
         /// <summary>
@@ -115,6 +119,8 @@ namespace Arriba.TfsWorkItemCrawler
         /// </summary>
         public Dictionary<string, string> ColumnMappings { get; set; }
 
+        public IOAuthConfig OAuthConfig { get; }
+
         public CrawlerConfiguration()
         {
             this.Owners = new List<string>();
@@ -123,6 +129,7 @@ namespace Arriba.TfsWorkItemCrawler
             this.ColumnsToInclude = new List<string>();
             this.ColumnsToExclude = new List<string>();
             this.ColumnMappings = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            this.OAuthConfig = new OAuthConfig();
         }
 
         public SecurityPermissions LoadPermissions()
@@ -179,6 +186,8 @@ namespace Arriba.TfsWorkItemCrawler
                 default:
                     throw new ArgumentException(String.Format(IdentityFormatExceptionFormatString, identity));
             }
-        }
+        }        
+
+        
     }
 }
