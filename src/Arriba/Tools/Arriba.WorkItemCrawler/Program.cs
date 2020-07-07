@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using Arriba.Configuration;
 using Arriba.Model.Column;
 using Arriba.TfsWorkItemCrawler.ItemConsumers;
 using Arriba.TfsWorkItemCrawler.ItemProviders;

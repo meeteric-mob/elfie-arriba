@@ -1,11 +1,8 @@
 ﻿using Arriba.Configuration;
 using Arriba.TfsWorkItemCrawler;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using System.Text;
 
 namespace Arriba.Test.Configuration
 {
