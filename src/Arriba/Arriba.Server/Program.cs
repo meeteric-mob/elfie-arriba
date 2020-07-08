@@ -112,7 +112,7 @@ namespace Arriba.Server
                     auth.DefaultPolicy = jwtBearerPolicy;
                 });
 
-                services.AddSingleton<IOAuthConfig, OAuthConfig>();
+                services.AddSingleton<IOAuthConfig>( (_) => serverConfig.OAuthConfig);
                 services.AddControllers();
             }
 
