@@ -9,4 +9,4 @@ WORKDIR /Arriba/Tools/app
 
 RUN ls -l
 RUN find /Arriba
-CMD ["dotnet", "Arriba.WorkItemCrawler.dll", "cseng", "-i"] 
+CMD ["dotnet", "Arriba.WorkItemCrawler.dll", "configName=cseng", "mode=-i"] 

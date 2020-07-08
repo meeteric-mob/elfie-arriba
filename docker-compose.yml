@@ -17,19 +17,22 @@ services:
     volumes:
       - arriba:/Arriba/DiskCache
     environment:
-      CLIENT_SECRET: UNKNOWN_CLIENT_SECRET
-      TENANT_ID: UNKNOWN_TENANT_ID
+      ARRIBA__AZPAT: ${AZPAT}
   server:
     build: 
       context: .docker/Server
       dockerfile: Dockerfile
     depends_on:
       - base
-    ports:
-      - 42784:80
     volumes:
       - arriba:/Arriba/DiskCache
     environment:
-      CLIENT_SECRET: UNKNOWN_CLIENT_SECRET
-      TENANT_ID: UNKNOWN_TENANT_ID
-
+      ARRIBASERVER__OAUTHCONFIG__APPSECRET: ${APPSECRET}
+  web:
+    build: 
+      context: .docker/WebUI
+      dockerfile: Dockerfile
+    depends_on:
+      - base
+    ports:
+      - 8080:80
