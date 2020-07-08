@@ -68,6 +68,7 @@ namespace Arriba.Server.Controllers
             {
                 { "client_id", _config.AudienceId },
                 { "response_type", "code" },
+                { "redirect_uri", _config.RedirectUrl },
                 { "response_mode", "query" },
                 { "prompt", _config.Prompt },
                 { "scope", GetScopes(_config.Scopes) },
@@ -88,6 +89,8 @@ namespace Arriba.Server.Controllers
             OAuthTokenResult oAuthToken = null;
             var response = await _http.PostAsync(uri, content);
             var result = await response.Content.ReadAsStringAsync();
+
+            Console.WriteLine($"ReadTokenResultAsync result: {result}");
 
             response.EnsureSuccessStatusCode();
             oAuthToken = JsonConvert.DeserializeObject<OAuthTokenResult>(result);
