@@ -30,15 +30,18 @@ namespace Arriba.Server
     {
         private const int DefaultPort = 42784;
 
+
+
         private static void Main(string[] args)
         {
             Console.WriteLine("Arriba Local Server\r\n");
 
-            Configuration c = Configuration.GetConfigurationForArgs(args);
-            int portNumber = c.GetConfigurationInt("port", DefaultPort);
+
+            var configLoader = new ArribaConfigurationLoader(args);
+            
 
             // Write trace messages to console if /trace is specified 
-            if (c.GetConfigurationBool("trace", Debugger.IsAttached))
+            if (configLoader.GetBoolValue("trace", Debugger.IsAttached))
             {
                 EventPublisher.AddConsumer(new ConsoleEventConsumer());
             }
@@ -65,10 +68,15 @@ namespace Arriba.Server
 
         private class Startup
         {
+            private ArribaServerConfiguration serverConfig;
+
             // This method gets called by the runtime. Use this method to add services to the container.
             // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
             public void ConfigureServices(IServiceCollection services)
             {
+                var configLoader = new ArribaConfigurationLoader(new string[] { });
+                serverConfig = configLoader.Bind<ArribaServerConfiguration>("ArribaServer");
+
                 Console.WriteLine("ConsoleLog");
                 Trace.WriteLine("TraceLog");
                 Debug.WriteLine("DebugLog");
@@ -90,7 +98,7 @@ namespace Arriba.Server
                                             });
                 });
 
-                var azureTokens = AzureJwtTokenFactory.CreateAsync(new OAuthConfig()).Result;
+                var azureTokens = AzureJwtTokenFactory.CreateAsync(serverConfig.OAuthConfig).Result;
                 services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                     .AddJwtBearer(azureTokens.Configure);
 
@@ -104,7 +112,7 @@ namespace Arriba.Server
                     auth.DefaultPolicy = jwtBearerPolicy;
                 });
 
-                services.AddSingleton<IOAuthConfig, OAuthConfig>();
+                services.AddSingleton<IOAuthConfig>( (_) => serverConfig.OAuthConfig);
                 services.AddControllers();
             }
 

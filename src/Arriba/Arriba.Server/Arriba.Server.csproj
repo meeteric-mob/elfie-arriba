@@ -34,6 +34,7 @@
             <Project>{7dcfe5a1-cdbf-426f-bd57-225443651238}</Project>
             <Name>Arriba.Communication</Name>
         </ProjectReference>
+        <ProjectReference Include="..\Arriba.Configuration\Arriba.Configuration.csproj" />
         <ProjectReference Include="..\Arriba\Arriba.csproj">
             <Project>{d89b4a01-f637-4147-9737-91a327a9da3f}</Project>
             <Name>Arriba</Name>

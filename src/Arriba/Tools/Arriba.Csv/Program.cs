@@ -62,9 +62,6 @@ namespace Arriba.Csv
             {
                 var configLoader = new ArribaConfigurationLoader(args);
 
-                //CommandLine c = CommandLine.Parse(configLoader);
-
-                //string mode = c.GetString("mode").ToLowerInvariant();
                 var mode = configLoader.GetStringValue("mode").ToLowerInvariant();
                 switch (mode)
                 {

@@ -14,19 +14,21 @@ namespace Arriba.Security.OAuth
 {
     public class AzureJwtTokenFactory
     {
+        private IOAuthConfig OAuthConfig { get; }
         private OpenIdConnectConfiguration Config { get; }
 
         public TokenValidationParameters TokenValidationParameters { get; }
 
-        private AzureJwtTokenFactory(OpenIdConnectConfiguration config)
+        private AzureJwtTokenFactory(IOAuthConfig oauthConfig, OpenIdConnectConfiguration config)
         {
+            this.OAuthConfig = oauthConfig;
             Config = config;
             TokenValidationParameters = new TokenValidationParameters()
             {
                 ValidateLifetime = true,
                 ValidateAudience = true,
                 ValidateIssuer = true,
-                ValidIssuer = "https://sts.windows.net/c3611820-5bdd-4423-a1fc-18834a47ae78/",
+                ValidIssuer = config.Issuer,
                 IssuerSigningKeys = Config.SigningKeys,
                 SignatureValidator = this.ValidateSignature
             };
@@ -34,7 +36,7 @@ namespace Arriba.Security.OAuth
 
         public void Configure(JwtBearerOptions options)
         {
-            options.Audience = "00000003-0000-0000-c000-000000000000";
+            options.Audience = OAuthConfig.AudienceId;
             options.TokenValidationParameters = this.TokenValidationParameters;
         }
 
@@ -57,12 +59,12 @@ namespace Arriba.Security.OAuth
 
         public static async Task<AzureJwtTokenFactory> CreateAsync(OAuthConfig authConfig)
         {
-            string stsDiscoveryEndpoint = $"https://login.microsoftonline.com/{authConfig.TenantId}/.well-known/openid-configuration";
+            string stsDiscoveryEndpoint = $"https://login.microsoftonline.com/{authConfig.TenantId}/v2.0/.well-known/openid-configuration";
 
             var configManager = new ConfigurationManager<OpenIdConnectConfiguration>(stsDiscoveryEndpoint, new OpenIdConnectConfigurationRetriever());
 
             var config = await configManager.GetConfigurationAsync();
-            return new AzureJwtTokenFactory(config);
+            return new AzureJwtTokenFactory(authConfig, config);
         }
     }
 }
