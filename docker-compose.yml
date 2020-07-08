@@ -24,8 +24,6 @@ services:
       dockerfile: Dockerfile
     depends_on:
       - base
-    ports:
-      - 42784:80
     volumes:
       - arriba:/Arriba/DiskCache
     environment:
@@ -37,4 +35,4 @@ services:
     depends_on:
       - base
     ports:
-      - 8080:8080
+      - 8080:80
