@@ -6,13 +6,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
+using Arriba.Configuration;
 using Arriba.Model.Column;
 using Arriba.TfsWorkItemCrawler.ItemConsumers;
 using Arriba.TfsWorkItemCrawler.ItemProviders;
-
-using Newtonsoft.Json;
 
 namespace Arriba.TfsWorkItemCrawler
 {
@@ -20,14 +18,19 @@ namespace Arriba.TfsWorkItemCrawler
     {
         private static async Task<int> Main(string[] args)
         {
+            Trace.Listeners.Add(new TextWriterTraceListener(Console.Out));
+
             if (args.Length < 2)
             {
                 Usage();
                 return -1;
             }
 
-            string configurationName = args[0];
-            string mode = args[1].ToLowerInvariant();
+            var configLoader = new ArribaConfigurationLoader(args);
+            var configurationName = configLoader.GetStringValue("configName");
+            var mode = configLoader.GetStringValue("mode", "-i").ToLowerInvariant();
+            Trace.WriteLine("Launching Crawler");
+            Trace.WriteLine($"Using configName: {configurationName} mode:{mode}");
 
             using (FileLock locker = FileLock.TryGet(String.Format("Arriba.TfsWorkItemCrawler.{0}.lock", configurationName)))
             {
@@ -39,15 +42,9 @@ namespace Arriba.TfsWorkItemCrawler
                         Console.WriteLine("Another instance running. Stopping.");
                         return -2;
                     }
-
-                    // Load the Configuration [up two or three folders, for Databases\<configurationName>\config.json
-                    string thisExePath = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
-                    string configJsonPath = Path.Combine(thisExePath, @"..\..\..\Databases", configurationName, "config.json");
-                    if (!File.Exists(configJsonPath)) configJsonPath = Path.Combine(thisExePath, @"..\..\..\..\Databases", configurationName, "config.json");
-                    string configJson = File.ReadAllText(configJsonPath);
-
-                    CrawlerConfiguration config = JsonConvert.DeserializeObject<CrawlerConfiguration>(configJson);
-                    config.ConfigurationName = configurationName;
+                    
+                    configLoader.AddJsonSource(GetJsonPath(configurationName));
+                    var config = configLoader.Bind<CrawlerConfiguration>("Arriba");
 
                     // Build the item consumer
                     IItemConsumer consumer = ItemConsumerUtilities.Build(config);
@@ -74,26 +71,34 @@ namespace Arriba.TfsWorkItemCrawler
                 {
                     foreach (Exception inner in ex.InnerExceptions)
                     {
-                        Trace.TraceError(String.Format("ERROR: {0}\r\n{1}", Environment.CommandLine, inner));
+                        Console.WriteLine(String.Format("ERROR: {0}\r\n{1}", Environment.CommandLine, inner));
                     }
 
                     return -2;
                 }
                 catch (Exception ex)
                 {
-                    Trace.TraceError(String.Format("ERROR: {0}\r\n{1}", Environment.CommandLine, ex));
+                    Console.WriteLine(String.Format("ERROR: {0}\r\n{1}", Environment.CommandLine, ex));
                     return -2;
                 }
             }
         }
 
+        private static string GetJsonPath(string configurationName)
+        {
+            var configSrcFolder = "src";
+            var basePath = Directory.GetCurrentDirectory();
+            basePath = basePath.Substring(0, basePath.IndexOf(configSrcFolder) + configSrcFolder.Length);
+            return Path.Combine(basePath, "Arriba", "Databases", configurationName, "appsettings.json");
+        }
+
         private static void Usage()
         {
             Console.WriteLine(
-@" Usage: Arriba.TfsWorkItemCrawler <configName> <mode> [<modeArguments>]
-     'Arriba.TfsWorkItemCrawler MyDatabase -i' -> Append updated MyDatabase items from primary provider.
-     'Arriba.TfsWorkItemCrawler MyDatabase -r' -> Rebuild all MyDatabase items from primary provider.
-     'Arriba.TfsWorkItemCrawler MyDatabase -password -> Local User Encrypt a TFS online password for config.
+@" Usage: Arriba.TfsWorkItemCrawler configName=<configName> mode=<mode> [<modeArguments>]
+     'Arriba.TfsWorkItemCrawler configName=MyDatabase mode=-i' -> Append updated MyDatabase items from primary provider.
+     'Arriba.TfsWorkItemCrawler configName=MyDatabase mode=-r' -> Rebuild all MyDatabase items from primary provider.
+     'Arriba.TfsWorkItemCrawler configName=MyDatabase mode=-password -> Local User Encrypt a TFS online password for config.
 ");
         }
     }
