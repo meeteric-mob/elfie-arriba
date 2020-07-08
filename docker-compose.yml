@@ -17,8 +17,7 @@ services:
     volumes:
       - arriba:/Arriba/DiskCache
     environment:
-      CLIENT_SECRET: UNKNOWN_CLIENT_SECRET
-      TENANT_ID: UNKNOWN_TENANT_ID
+      ARRIBA__AZPAT: 
   server:
     build: 
       context: .docker/Server
@@ -30,8 +29,7 @@ services:
     volumes:
       - arriba:/Arriba/DiskCache
     environment:
-      CLIENT_SECRET: UNKNOWN_CLIENT_SECRET
-      TENANT_ID: UNKNOWN_TENANT_ID
+      ARRIBASERVER__OAUTHCONFIG__APPSECRET: 
   web:
     build: 
       context: .docker/WebUI
