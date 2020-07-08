@@ -17,7 +17,7 @@ services:
     volumes:
       - arriba:/Arriba/DiskCache
     environment:
-      ARRIBA__AZPAT: 
+      ARRIBA__AZPAT: ${AZPAT}
   server:
     build: 
       context: .docker/Server
@@ -29,7 +29,7 @@ services:
     volumes:
       - arriba:/Arriba/DiskCache
     environment:
-      ARRIBASERVER__OAUTHCONFIG__APPSECRET: 
+      ARRIBASERVER__OAUTHCONFIG__APPSECRET: ${APPSECRET}
   web:
     build: 
       context: .docker/WebUI

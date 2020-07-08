@@ -68,7 +68,7 @@ namespace Arriba.Configuration
             if (string.IsNullOrWhiteSpace(jsonPath)) throw new ArgumentException("Not Provided!", nameof(jsonPath));
 
             if (!File.Exists(jsonPath))
-                throw new FileNotFoundException(jsonPath);
+                throw new FileNotFoundException("Unable to load config", jsonPath);
 
             configurationBuilder.AddJsonFile(jsonPath);
             configuration = configurationBuilder.Build();

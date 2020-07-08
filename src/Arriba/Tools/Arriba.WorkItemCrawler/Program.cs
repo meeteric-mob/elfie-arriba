@@ -86,10 +86,25 @@ namespace Arriba.TfsWorkItemCrawler
 
         private static string GetJsonPath(string configurationName)
         {
-            var configSrcFolder = "src";
-            var basePath = Directory.GetCurrentDirectory();
-            basePath = basePath.Substring(0, basePath.IndexOf(configSrcFolder) + configSrcFolder.Length);
-            return Path.Combine(basePath, "Arriba", "Databases", configurationName, "appsettings.json");
+            var d = new DirectoryInfo(Directory.GetCurrentDirectory());
+            var configPath = Path.Combine("Databases", configurationName, "appsettings.json");
+            var result = String.Empty;
+
+            while (d != null)
+            {
+                result = Path.Combine(d.FullName, configPath);
+                if (File.Exists(result))
+                {
+                    break;
+                }
+                else {
+                    Trace.WriteLine($"Probing {result}");
+                    result = null;
+                    d = d.Parent;
+                }
+            }
+
+            return result;
         }
 
         private static void Usage()
