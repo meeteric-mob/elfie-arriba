@@ -8,24 +8,18 @@ namespace Arriba.Configuration
     {
         public OAuthConfig()
         {
-            this.RedirectUrl = "http://localhost:42784/api/oauth/auth-code";
-            this.TenantId = "c3611820-5bdd-4423-a1fc-18834a47ae78";
-            this.AudienceId = "051ef594-8e5a-4156-a8ce-93fae3220779";
-            this.AppSecret = "";
-            this.Prompt = "login";
-            this.Scopes = new[] { "openid" };
         }
 
-        public string TenantId { get; }
+        public string TenantId { get; set; }
 
-        public string AudienceId { get; }
+        public string AudienceId { get; set; }
 
-        public string RedirectUrl { get; }
+        public string RedirectUrl { get; set; }
 
-        public IList<string> Scopes { get; }
+        public IList<string> Scopes { get; set; }
 
-        public string Prompt { get; }
+        public string Prompt { get; set; }
 
-        public string AppSecret { get; }
+        public string AppSecret { get; set; }
     }
 }
