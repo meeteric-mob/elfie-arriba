@@ -16,6 +16,8 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
+using Arriba.Communication.Server.Application;
+using Arriba.Server.Hosting;
 
 namespace Arriba.Server
 {
@@ -48,6 +50,7 @@ namespace Arriba.Server
 
             services.AddOAuth(serverConfig);
 
+            services.AddSingleton<IArribaManagementService>(new ArribaManagementService(new DatabaseFactory()));
             services.AddSingleton<IArribaServerConfiguration>((_) => serverConfig);
             services.AddControllers();
         }
