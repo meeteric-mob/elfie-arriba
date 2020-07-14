@@ -2,6 +2,7 @@
 using Arriba.Configuration;
 using Arriba.Security.OAuth;
 using Arriba.Server.Owin;
+using Arriba.Server.Extensions;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
@@ -45,25 +46,9 @@ namespace Arriba.Server
                 });
             });
 
-            if (serverConfig.EnabledAuthentication)
-            {
-                var azureTokens = AzureJwtTokenFactory.CreateAsync(serverConfig.OAuthConfig).Result;
-                services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-                    .AddJwtBearer(azureTokens.Configure);
-
-                var jwtBearerPolicy = new AuthorizationPolicyBuilder()
-                   .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme)
-                   .RequireAuthenticatedUser()
-                   .Build();
-
-                services.AddAuthorization(auth =>
-                {
-                    auth.DefaultPolicy = jwtBearerPolicy;
-                });
-            }
+            services.AddOAuth(serverConfig);
 
             services.AddSingleton<IArribaServerConfiguration>((_) => serverConfig);
-            services.AddSingleton((_) => serverConfig.OAuthConfig);
             services.AddControllers();
         }
 
@@ -80,6 +65,7 @@ namespace Arriba.Server
 
             if (serverConfig.EnabledAuthentication)
                 app.UseAuthorization();
+
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
