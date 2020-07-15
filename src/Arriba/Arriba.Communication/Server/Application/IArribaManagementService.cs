@@ -1,5 +1,6 @@
 ﻿using Arriba.Types;
 using System.Collections.Generic;
+using System.Security.Principal;
 
 namespace Arriba.Communication.Server.Application
 {
@@ -7,6 +8,6 @@ namespace Arriba.Communication.Server.Application
     {
         IEnumerable<string> GetTables();
 
-        Dictionary<string, TableInformation> GetAllBasic();
+        IDictionary<string, TableInformation> GetTablesForUser(IPrincipal user);
     }
 }

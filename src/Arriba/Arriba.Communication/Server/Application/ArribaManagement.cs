@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Composition;
+using System.Security.Principal;
 using System.Threading.Tasks;
 
 using Arriba.Communication;
@@ -21,7 +22,7 @@ using Arriba.Types;
 namespace Arriba.Server.Application
 {
     [Export(typeof(IRoutedApplication))]
-    internal class ArribaManagement : ArribaApplication
+    internal class ArribaManagement : ArribaApplication, IArribaManagementService
     {
         [ImportingConstructor]
         public ArribaManagement(DatabaseFactory f, ClaimsAuthenticationService auth)
@@ -84,27 +85,25 @@ namespace Arriba.Server.Application
 
         private IResponse GetAllBasics(IRequestContext ctx, Route route)
         {
-            bool hasTables = false;
+            IPrincipal user = ctx.Request.User;
 
+            Dictionary<string, TableInformation> allBasics = GetTablesForUser(user);
+
+            return ArribaResponse.Ok(allBasics);
+        }
+
+        private Dictionary<string, TableInformation> GetTablesForUser(IPrincipal user)
+        {
             Dictionary<string, TableInformation> allBasics = new Dictionary<string, TableInformation>();
             foreach (string tableName in this.Database.TableNames)
             {
-                hasTables = true;
-
-                if (HasTableAccess(tableName, ctx.Request.User, PermissionScope.Reader))
+                if (HasTableAccess(tableName, user, PermissionScope.Reader))
                 {
-                    allBasics[tableName] = GetTableBasics(tableName, ctx);
+                    allBasics[tableName] = GetTableDetailsForUser(tableName, user);
                 }
             }
 
-            // If you didn't have access to any tables, return a distinct result to show Access Denied in the browser
-            // but not a 401, because that is eaten by CORS.
-            if (allBasics.Count == 0 && hasTables)
-            {
-                return ArribaResponse.Ok(null);
-            }
-
-            return ArribaResponse.Ok(allBasics);
+            return allBasics;
         }
 
         private IResponse GetTableInformation(IRequestContext ctx, Route route)
@@ -121,17 +120,22 @@ namespace Arriba.Server.Application
 
         private TableInformation GetTableBasics(string tableName, IRequestContext ctx)
         {
-            var table = this.Database[tableName];
+            IPrincipal user = ctx.Request.User;
+            return GetTableDetailsForUser(tableName, user);
+        }
 
+        private TableInformation GetTableDetailsForUser(string tableName, IPrincipal user)
+        {
+            var table = this.Database[tableName];
             TableInformation ti = new TableInformation();
             ti.Name = tableName;
             ti.PartitionCount = table.PartitionCount;
             ti.RowCount = table.Count;
             ti.LastWriteTimeUtc = table.LastWriteTimeUtc;
-            ti.CanWrite = HasTableAccess(tableName, ctx.Request.User, PermissionScope.Writer);
-            ti.CanAdminister = HasTableAccess(tableName, ctx.Request.User, PermissionScope.Owner);
+            ti.CanWrite = HasTableAccess(tableName, user, PermissionScope.Writer);
+            ti.CanAdminister = HasTableAccess(tableName, user, PermissionScope.Owner);
 
-            IList<string> restrictedColumns = this.Database.GetRestrictedColumns(tableName, (si) => this.IsInIdentity(ctx.Request.User, si));
+            IList<string> restrictedColumns = this.Database.GetRestrictedColumns(tableName, (si) => this.IsInIdentity(user, si));
             if (restrictedColumns == null)
             {
                 ti.Columns = table.ColumnDetails;
